@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Output Format Playground</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            min-height: 100vh;
+        }
+        .layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            height: 100vh;
+        }
+        .left-panel {
+            border-right: 1px solid #30363d;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #30363d;
+        }
+        h1 { color: #58a6ff; font-size: 1.5rem; margin-bottom: 0.25rem; }
+        .subtitle { color: #8b949e; font-size: 0.9rem; }
+        .search-box {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            color: #c9d1d9;
+            margin-top: 1rem;
+        }
+        .search-box:focus { outline: none; border-color: #58a6ff; }
+        .filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #30363d;
+        }
+        .filter-btn {
+            padding: 0.35rem 0.75rem;
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 20px;
+            color: #8b949e;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+        }
+        .filter-btn:hover, .filter-btn.active {
+            background: #58a6ff;
+            color: #0d1117;
+            border-color: #58a6ff;
+        }
+        .stats { color: #8b949e; padding: 0.75rem 1.5rem; font-size: 0.85rem; border-bottom: 1px solid #30363d; }
+        .list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.5rem;
+        }
+        .card {
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s;
+            border: 1px solid transparent;
+            margin-bottom: 2px;
+        }
+        .card:hover { background: #161b22; }
+        .card.active { background: #161b22; border-color: #58a6ff; }
+        .card-row { display: flex; align-items: center; gap: 0.75rem; }
+        .code {
+            font-family: 'SF Mono', Consolas, monospace;
+            background: #58a6ff;
+            color: #0d1117;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 0.8rem;
+            min-width: 70px;
+            text-align: center;
+        }
+        .name { color: #c9d1d9; font-weight: 500; font-size: 0.9rem; }
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: #161b22;
+        }
+        .detail-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #30363d;
+        }
+        .detail-title { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem; }
+        .detail-title .code { font-size: 1.1rem; padding: 0.4rem 0.6rem; }
+        .detail-title .name { font-size: 1.25rem; }
+        .detail-category {
+            font-size: 0.8rem;
+            color: #8b949e;
+            background: #21262d;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        .detail-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+        }
+        .section { margin-bottom: 1.5rem; }
+        .section h3 { color: #58a6ff; font-size: 0.8rem; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em; }
+        .section p { color: #c9d1d9; line-height: 1.5; }
+        .prompt-box {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+        .prompt-box code { color: #7ee787; font-family: 'SF Mono', Consolas, monospace; }
+        .copy-btn {
+            background: #21262d;
+            border: 1px solid #30363d;
+            color: #c9d1d9;
+            padding: 0.4rem 0.75rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .copy-btn:hover { background: #30363d; }
+        .copy-btn.copied { background: #238636; border-color: #238636; }
+        .example-box {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 1rem;
+            font-family: 'SF Mono', Consolas, monospace;
+            font-size: 0.85rem;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            line-height: 1.4;
+        }
+        .empty-state {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #8b949e;
+            font-size: 0.95rem;
+        }
+        @media (max-width: 900px) {
+            .layout { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
+            .left-panel { border-right: none; border-bottom: 1px solid #30363d; }
+        }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <div class="left-panel">
+            <div class="header">
+                <h1>AI Output Format Playground</h1>
+                <p class="subtitle">116 standardized format tags for AI prompts</p>
+                <input type="text" class="search-box" placeholder="Search formats..." id="search">
+            </div>
+            <div class="filters" id="filters"></div>
+            <div class="stats" id="stats"></div>
+            <div class="list" id="list"></div>
+        </div>
+        <div class="right-panel">
+            <div id="detail">
+                <div class="empty-state">Select a format to view details</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+const formats = [
+    { code: "JSNARR", name: "JSON Array", category: "Structured Data", description: "Bracketed list of items in JSON syntax; for APIs and data interchange", example: '[\n  { "id": 1, "name": "Item 1" },\n  { "id": 2, "name": "Item 2" }\n]' },
+    { code: "JSNOBJ", name: "JSON Object", category: "Structured Data", description: "Key-value pairs in curly braces; for structured data payloads", example: '{\n  "name": "Product",\n  "price": 29.99,\n  "inStock": true\n}' },
+    { code: "JSNNST", name: "JSON Nested", category: "Structured Data", description: "Multi-level JSON with embedded objects/arrays; for complex hierarchies", example: '{\n  "user": {\n    "name": "John",\n    "address": {\n      "city": "NYC",\n      "zip": "10001"\n    }\n  }\n}' },
+    { code: "YAMLCF", name: "YAML Config", category: "Structured Data", description: "Indentation-based key-value pairs; for configuration files", example: 'server:\n  host: localhost\n  port: 3000\ndatabase:\n  name: myapp' },
+    { code: "YAMLLST", name: "YAML List", category: "Structured Data", description: "Dash-prefixed items in YAML; for ordered sequences in configs", example: 'dependencies:\n  - express\n  - lodash\n  - axios' },
+    { code: "XMLDOC", name: "XML Document", category: "Structured Data", description: "Angle-bracket tags with attributes; for markup and data exchange", example: '<?xml version="1.0"?>\n<root>\n  <item id="1">First</item>\n  <item id="2">Second</item>\n</root>' },
+    { code: "XMLSNP", name: "XML Snippet", category: "Structured Data", description: "Partial XML fragment; for showing relevant portions of XML structures", example: '<user>\n  <name>John Doe</name>\n  <email>john@example.com</email>\n</user>' },
+    { code: "TOMLCF", name: "TOML Config", category: "Structured Data", description: "Section headers with key=value pairs; for Rust/Python configs", example: '[package]\nname = "myapp"\nversion = "1.0.0"\n\n[dependencies]\nrequest = "2.0"' },
+    { code: "INICFG", name: "INI Config", category: "Structured Data", description: "[Section] headers with key=value; for legacy Windows-style configs", example: '[Database]\nhost=localhost\nport=5432\n\n[App]\ndebug=true' },
+    { code: "CSVDAT", name: "CSV Data", category: "Structured Data", description: "Comma-separated values with header row; for tabular data export", example: 'name,age,city\nAlice,30,NYC\nBob,25,LA\nCarol,35,Chicago' },
+    { code: "TSVDAT", name: "TSV Data", category: "Structured Data", description: "Tab-separated values; for spreadsheet-compatible tabular data", example: 'name\tage\tcity\nAlice\t30\tNYC\nBob\t25\tLA' },
+    { code: "ENVFIL", name: "ENV File", category: "Structured Data", description: "KEY=value pairs on lines; for environment variable definitions", example: 'DATABASE_URL=postgres://localhost/db\nAPI_KEY=sk-12345\nDEBUG=true' },
+    { code: "PRPFIL", name: "Properties File", category: "Structured Data", description: "Java-style key=value configuration; for application settings", example: 'app.name=MyApp\napp.version=1.0\nserver.port=8080' },
+    { code: "MDTXT", name: "Markdown Text", category: "Markup & Documentation", description: "Standard Markdown with headers/emphasis; for documentation and READMEs", example: '# Heading\n\nSome **bold** and *italic* text.\n\n- List item 1\n- List item 2' },
+    { code: "MDFMT", name: "Markdown Formatted", category: "Markup & Documentation", description: "Rich Markdown with links, images, emphasis; for styled documents", example: '# Title\n\n![Image](url)\n\n[Link text](https://example.com)\n\n> Blockquote' },
+    { code: "GFMEXT", name: "GitHub Flavored MD", category: "Markup & Documentation", description: "Extended Markdown with task lists and tables; for GitHub repos", example: '- [x] Completed task\n- [ ] Pending task\n\n| Col1 | Col2 |\n|------|------|\n| A    | B    |' },
+    { code: "HTMLFR", name: "HTML Fragment", category: "Markup & Documentation", description: "Partial HTML elements; for embedding in existing pages", example: '<div class="card">\n  <h3>Title</h3>\n  <p>Content here</p>\n</div>' },
+    { code: "HTMLPG", name: "HTML Page", category: "Markup & Documentation", description: "Complete HTML document with head/body; for standalone web pages", example: '<!DOCTYPE html>\n<html>\n<head><title>Page</title></head>\n<body>\n  <h1>Hello</h1>\n</body>\n</html>' },
+    { code: "HTMLTB", name: "HTML Table", category: "Markup & Documentation", description: "Table element with rows and cells; for structured web data", example: '<table>\n  <tr><th>Name</th><th>Age</th></tr>\n  <tr><td>Alice</td><td>30</td></tr>\n</table>' },
+    { code: "RSTDOC", name: "reStructuredText", category: "Markup & Documentation", description: "Python-style documentation markup; for Sphinx documentation", example: 'Title\n=====\n\nSection\n-------\n\n.. note::\n   This is a note.' },
+    { code: "ASCDOC", name: "AsciiDoc", category: "Markup & Documentation", description: "Documentation with section titles; for technical books and manuals", example: '= Document Title\n\n== Section\n\nParagraph text.\n\n* List item' },
+    { code: "LATEXF", name: "LaTeX Formula", category: "Markup & Documentation", description: "Math typesetting with backslash commands; for equations and papers", example: '$$\n\\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}\n$$' },
+    { code: "LATEXD", name: "LaTeX Document", category: "Markup & Documentation", description: "Full document class with preamble; for academic papers", example: '\\documentclass{article}\n\\begin{document}\n\\title{Paper}\n\\maketitle\nContent\n\\end{document}' },
+    { code: "TEXMTH", name: "TeX Math Block", category: "Markup & Documentation", description: "Inline or display math expressions; for rendering mathematics", example: '$E = mc^2$\n\n$$\\sum_{i=1}^{n} x_i$$' },
+    { code: "BBCODE", name: "BBCode", category: "Markup & Documentation", description: "Forum-style [tag] formatting; for bulletin board posts", example: '[b]Bold text[/b]\n[i]Italic text[/i]\n[url=http://example.com]Link[/url]' },
+    { code: "WIKITX", name: "Wiki Markup", category: "Markup & Documentation", description: "MediaWiki-style formatting; for Wikipedia-like content", example: "== Section ==\n'''Bold''' and ''italic''\n\n* Bullet\n# Numbered\n\n[[Link|Text]]" },
+    { code: "BULLST", name: "Bullet List", category: "Lists & Enumerations", description: "Unordered list with dash or dot markers; for non-sequential items", example: '- First item\n- Second item\n- Third item' },
+    { code: "NUMBLST", name: "Numbered List", category: "Lists & Enumerations", description: "Ordered list with numeric prefixes; for sequential steps", example: '1. First step\n2. Second step\n3. Third step' },
+    { code: "ALPLST", name: "Alpha List", category: "Lists & Enumerations", description: "Lettered list (a, b, c); for categorical sublists", example: 'a) Option A\nb) Option B\nc) Option C' },
+    { code: "ROMLST", name: "Roman Numeral List", category: "Lists & Enumerations", description: "i, ii, iii prefixed items; for formal outlines", example: 'i. First point\nii. Second point\niii. Third point' },
+    { code: "CHKLST", name: "Checklist", category: "Lists & Enumerations", description: "[ ] and [x] prefixed items; for task tracking", example: '[x] Completed task\n[ ] Pending task\n[ ] Another task' },
+    { code: "NESTLS", name: "Nested List", category: "Lists & Enumerations", description: "Multi-level indented lists; for hierarchical information", example: '- Main item\n  - Sub item 1\n  - Sub item 2\n    - Deep item\n- Another main' },
+    { code: "DEFNLS", name: "Definition List", category: "Lists & Enumerations", description: "Term-definition pairs; for glossaries and FAQs", example: 'API\n: Application Programming Interface\n\nREST\n: Representational State Transfer' },
+    { code: "PROLS", name: "Prose List", category: "Lists & Enumerations", description: "Inline comma-separated items; for embedded enumerations", example: 'The options include: red, green, blue, and yellow.' },
+    { code: "ICONLS", name: "Icon List", category: "Lists & Enumerations", description: "Emoji or symbol prefixed items; for visual categorization", example: '✓ Completed\n⚠ Warning\n✗ Failed\n→ Next step' },
+    { code: "TIMLST", name: "Timeline List", category: "Lists & Enumerations", description: "Date-prefixed chronological items; for event sequences", example: '2020 - Company founded\n2021 - First product launch\n2022 - Series A funding' },
+    { code: "RANKLST", name: "Ranked List", category: "Lists & Enumerations", description: "Numbered items with explicit ranking; for leaderboards", example: '#1 Gold - Alice (95 pts)\n#2 Silver - Bob (87 pts)\n#3 Bronze - Carol (82 pts)' },
+    { code: "GRPLST", name: "Grouped List", category: "Lists & Enumerations", description: "Categorized sublists under headers; for organized collections", example: 'Fruits:\n- Apple\n- Banana\n\nVegetables:\n- Carrot\n- Broccoli' },
+    { code: "MDTABL", name: "Markdown Table", category: "Tables & Grids", description: "Pipe-delimited columns with alignment; for docs and READMEs", example: '| Name  | Age | City |\n|-------|-----|------|\n| Alice | 30  | NYC  |\n| Bob   | 25  | LA   |' },
+    { code: "ASCTBL", name: "ASCII Table", category: "Tables & Grids", description: "Box-drawn table with +|-| characters; for terminal output", example: '+-------+-----+\n| Name  | Age |\n+-------+-----+\n| Alice | 30  |\n| Bob   | 25  |\n+-------+-----+' },
+    { code: "GRIDTB", name: "Grid Table", category: "Tables & Grids", description: "Dense grid with column separators; for fixed-width displays", example: '┌───────┬─────┐\n│ Name  │ Age │\n├───────┼─────┤\n│ Alice │ 30  │\n└───────┴─────┘' },
+    { code: "PIVTBL", name: "Pivot Table", category: "Tables & Grids", description: "Rows and columns with aggregated values; for data summaries", example: '         Q1    Q2    Q3\nNorth   100   120   150\nSouth    80    90   110\nTotal   180   210   260' },
+    { code: "CMPTBL", name: "Comparison Table", category: "Tables & Grids", description: "Side-by-side feature/option comparison; for decision matrices", example: 'Feature    | Plan A | Plan B\n-----------|--------|-------\nStorage    | 10 GB  | 100 GB\nUsers      | 5      | Unlimited\nPrice      | $10/mo | $50/mo' },
+    { code: "MATTBL", name: "Matrix Table", category: "Tables & Grids", description: "Row/column intersection grid; for cross-referencing", example: '      A   B   C\n  1   x   -   x\n  2   -   x   -\n  3   x   x   x' },
+    { code: "CALEND", name: "Calendar Grid", category: "Tables & Grids", description: "Month view with day cells; for date-based planning", example: 'December 2024\nMo Tu We Th Fr Sa Su\n                   1\n 2  3  4  5  6  7  8\n 9 10 11 12 13 14 15' },
+    { code: "SPRDSH", name: "Spreadsheet", category: "Tables & Grids", description: "Cell-referenced grid with formulas; for calculations", example: '   A      B      C\n1  Item   Qty    Total\n2  Apple  10     =B2*2\n3  Banana 5      =B3*1.5' },
+    { code: "KANTBL", name: "Kanban Board", category: "Tables & Grids", description: "Column-based status cards; for workflow visualization", example: 'TODO        | IN PROGRESS | DONE\n------------|-------------|-----\nTask A      | Task C      | Task E\nTask B      | Task D      |' },
+    { code: "HEATMP", name: "Heatmap Grid", category: "Tables & Grids", description: "Values with intensity indicators; for density visualization", example: '     Mon Tue Wed Thu Fri\n9am  ██  ▓▓  ░░  ▓▓  ██\n12pm ▓▓  ██  ██  ░░  ▓▓\n3pm  ░░  ▓▓  ▓▓  ██  ░░' },
+    { code: "CODEBL", name: "Code Block", category: "Code & Technical", description: "Fenced code with syntax highlighting; for source code display", example: '```javascript\nfunction hello() {\n  console.log("Hello!");\n}\n```' },
+    { code: "CODEIN", name: "Inline Code", category: "Code & Technical", description: "Backtick-wrapped text; for inline technical references", example: 'Use `npm install` to install and `npm start` to run.' },
+    { code: "PSUDOC", name: "Pseudocode", category: "Code & Technical", description: "Language-agnostic algorithm steps; for logic explanation", example: 'FUNCTION findMax(list):\n  max = list[0]\n  FOR each item IN list:\n    IF item > max:\n      max = item\n  RETURN max' },
+    { code: "SHLCMD", name: "Shell Command", category: "Code & Technical", description: "Terminal commands with $ prefix; for CLI instructions", example: '$ npm install express\n$ npm start\n$ curl http://localhost:3000' },
+    { code: "SHLOUT", name: "Shell Output", category: "Code & Technical", description: "Command results without prompt; for expected output", example: 'Server started on port 3000\nConnected to database\nReady for connections' },
+    { code: "REGEXF", name: "Regex Pattern", category: "Code & Technical", description: "Regular expression with explanation; for pattern matching", example: '/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$/\n\nMatches valid email addresses' },
+    { code: "SQLQRY", name: "SQL Query", category: "Code & Technical", description: "Formatted SELECT/INSERT statements; for database operations", example: 'SELECT u.name, COUNT(o.id)\nFROM users u\nLEFT JOIN orders o ON u.id = o.user_id\nGROUP BY u.id;' },
+    { code: "APIREQ", name: "API Request", category: "Code & Technical", description: "HTTP method + endpoint + body; for REST documentation", example: 'POST /api/users\nContent-Type: application/json\n\n{\n  "name": "John",\n  "email": "john@example.com"\n}' },
+    { code: "APIRES", name: "API Response", category: "Code & Technical", description: "Status code + headers + body; for API response examples", example: 'HTTP/1.1 201 Created\nContent-Type: application/json\n\n{\n  "id": 123,\n  "status": "created"\n}' },
+    { code: "CURLCM", name: "cURL Command", category: "Code & Technical", description: "Complete curl invocation; for API testing examples", example: 'curl -X POST https://api.example.com/users \\\n  -H "Content-Type: application/json" \\\n  -d \'{"name": "John"}\''},
+    { code: "DIFFPT", name: "Diff Patch", category: "Code & Technical", description: "+/- line prefixes showing changes; for code reviews", example: '- const old = "value";\n+ const new = "updated";\n  const unchanged = true;' },
+    { code: "LOGFMT", name: "Log Format", category: "Code & Technical", description: "Timestamp + level + message; for logging output", example: '2024-01-15 10:30:00 [INFO] Server started\n2024-01-15 10:30:01 [DEBUG] Loading config\n2024-01-15 10:30:02 [ERROR] Connection failed' },
+    { code: "ERRFMT", name: "Error Format", category: "Code & Technical", description: "Error type, message, and stack; for debugging output", example: 'TypeError: Cannot read property "x" of undefined\n  at processData (app.js:42)\n  at main (app.js:10)' },
+    { code: "CFGBLK", name: "Config Block", category: "Code & Technical", description: "Application configuration section; for settings documentation", example: '# Server Configuration\nport: 3000\nhost: localhost\ntimeout: 30s\nmax_connections: 100' },
+    { code: "FNCSIG", name: "Function Signature", category: "Code & Technical", description: "Function name + params + return type; for API references", example: 'function fetchUser(\n  id: number,\n  options?: FetchOptions\n): Promise<User>' },
+    { code: "CLSDEF", name: "Class Definition", category: "Code & Technical", description: "Class structure with methods/props; for OOP documentation", example: 'class User {\n  id: number\n  name: string\n  \n  constructor(id, name)\n  save(): Promise<void>\n  delete(): void\n}' },
+    { code: "TYPDEF", name: "Type Definition", category: "Code & Technical", description: "TypeScript/type alias notation; for type system docs", example: 'type User = {\n  id: number;\n  name: string;\n  email?: string;\n  roles: Role[];\n}' },
+    { code: "SCMDEF", name: "Schema Definition", category: "Code & Technical", description: "Field definitions with types; for data structure docs", example: 'User Schema:\n  id       : integer (primary key)\n  name     : string (required, max 100)\n  email    : string (unique)\n  created  : timestamp' },
+    { code: "ASCART", name: "ASCII Art", category: "Diagrams & Visualizations", description: "Character-based illustration; for terminal-compatible graphics", example: '  /\\_/\\\n ( o.o )\n  > ^ <\n /|   |\\\n(_|   |_)' },
+    { code: "BOXDIA", name: "Box Diagram", category: "Diagrams & Visualizations", description: "Connected rectangles showing flow; for architecture diagrams", example: '┌─────────┐     ┌─────────┐\n│  Client │────▶│  Server │\n└─────────┘     └────┬────┘\n                     │\n                ┌────▼────┐\n                │   DB    │\n                └─────────┘' },
+    { code: "FLWCHT", name: "Flowchart", category: "Diagrams & Visualizations", description: "Decision/process flow with arrows; for process documentation", example: '[Start]\n   │\n   ▼\n<Decision?>\n  / \\\nYes  No\n │    │\n ▼    ▼\n[A]  [B]\n  \\  /\n  [End]' },
+    { code: "SEQDIA", name: "Sequence Diagram", category: "Diagrams & Visualizations", description: "Actor lifelines with messages; for interaction modeling", example: 'Client    Server    DB\n  │         │        │\n  │──req───▶│        │\n  │         │──query▶│\n  │         │◀─data──│\n  │◀─resp───│        │' },
+    { code: "TREEDI", name: "Tree Diagram", category: "Diagrams & Visualizations", description: "Hierarchical branching structure; for file systems or org charts", example: 'project/\n├── src/\n│   ├── index.js\n│   └── utils/\n│       └── helpers.js\n├── package.json\n└── README.md' },
+    { code: "MERMAD", name: "Mermaid Diagram", category: "Diagrams & Visualizations", description: "Text-based diagram syntax; for rendered diagrams", example: '```mermaid\nflowchart TD\n  A[Start] --> B{Check}\n  B -->|Yes| C[Do X]\n  B -->|No| D[Do Y]\n  C --> E[End]\n  D --> E\n```' },
+    { code: "PLANTU", name: "PlantUML", category: "Diagrams & Visualizations", description: "UML diagram notation; for software architecture", example: '@startuml\nactor User\nUser -> Server: Request\nServer -> DB: Query\nDB --> Server: Data\nServer --> User: Response\n@enduml' },
+    { code: "GANTCH", name: "Gantt Chart", category: "Diagrams & Visualizations", description: "Timeline bars for tasks; for project scheduling", example: 'Task      |Jan|Feb|Mar|Apr|\n----------|---|---|---|---|\nDesign    |███|   |   |   |\nDevelop   |   |███|███|   |\nTest      |   |   |   |███|' },
+    { code: "GRAPHV", name: "Graphviz DOT", category: "Diagrams & Visualizations", description: "Node-edge graph notation; for network diagrams", example: 'digraph G {\n  A -> B;\n  B -> C;\n  A -> C;\n}' },
+    { code: "SPARKL", name: "Sparkline", category: "Diagrams & Visualizations", description: "Inline mini trend line; for embedded data trends", example: 'Sales: ▁▂▄▆█▇▅▃▂▄ (+15%)' },
+    { code: "BARCHT", name: "Bar Chart ASCII", category: "Diagrams & Visualizations", description: "Horizontal bar visualization; for simple comparisons", example: 'Sales by Region:\nNorth ████████████ 60%\nSouth ██████ 30%\nWest  ██ 10%' },
+    { code: "PIECHR", name: "Pie Chart Text", category: "Diagrams & Visualizations", description: "Percentage breakdown list; for distribution display", example: 'Budget Distribution:\n● Marketing  35%\n● Engineering 40%\n● Operations 15%\n● Other      10%' },
+    { code: "VENNDI", name: "Venn Diagram", category: "Diagrams & Visualizations", description: "Overlapping circle descriptions; for set relationships", example: 'Set A: {1,2,3,4}\nSet B: {3,4,5,6}\n\nA ∩ B: {3,4}\nA ∪ B: {1,2,3,4,5,6}' },
+    { code: "ORGCHT", name: "Org Chart", category: "Diagrams & Visualizations", description: "Hierarchical position tree; for organizational structure", example: '        [CEO]\n       /     \\\n   [CTO]     [CFO]\n   /   \\        \\\n[Dev] [Ops]  [Finance]' },
+    { code: "ERDIAG", name: "ER Diagram", category: "Diagrams & Visualizations", description: "Entity-relationship notation; for database modeling", example: '[User]──1:N──[Order]\n   │            │\n   └───N:N──[Product]' },
+    { code: "MINDMP", name: "Mind Map", category: "Diagrams & Visualizations", description: "Central topic with radiating branches; for brainstorming", example: '           ┌─ Feature A\n    ┌─ UI ─┼─ Feature B\nApp─┤      └─ Feature C\n    └─ API ─── Endpoints' },
+    { code: "EMLFMT", name: "Email Format", category: "Communication", description: "To/From/Subject headers + body; for email composition", example: 'To: recipient@email.com\nFrom: sender@email.com\nSubject: Meeting Tomorrow\n\nHi,\n\nLet\'s meet at 2pm.\n\nBest,\nSender' },
+    { code: "MEMOFM", name: "Memo Format", category: "Communication", description: "Formal internal communication; for business memos", example: 'MEMO\n\nTO: All Staff\nFROM: Management\nDATE: January 15, 2024\nRE: Policy Update\n\nPlease note the following changes...' },
+    { code: "LETTFM", name: "Letter Format", category: "Communication", description: "Salutation/body/closing structure; for formal correspondence", example: 'January 15, 2024\n\nDear Mr. Smith,\n\nI am writing to...\n\nSincerely,\nJane Doe' },
+    { code: "CHATFM", name: "Chat Format", category: "Communication", description: "Username: message style; for conversation logs", example: 'Alice: Hey, are you there?\nBob: Yes, what\'s up?\nAlice: Can you review my PR?\nBob: Sure, sending feedback now.' },
+    { code: "SLKMSG", name: "Slack Message", category: "Communication", description: "Rich text with mentions/emojis; for team chat", example: '@channel Quick update!\n\n*Sprint Review* is at 3pm today\n> Join link: zoom.us/...\n\nPlease confirm attendance' },
+    { code: "TWTTXT", name: "Tweet Format", category: "Communication", description: "Character-limited with hashtags; for social media", example: 'Just shipped v2.0!\n\nNew features:\n- Dark mode\n- API improvements\n- Bug fixes\n\n#opensource #webdev' },
+    { code: "PRSSRL", name: "Press Release", category: "Communication", description: "Headline/dateline/body/contact; for announcements", example: 'FOR IMMEDIATE RELEASE\n\nCompany X Launches Product Y\n\nNEW YORK, Jan 15 - Company X today announced...\n\nContact: press@company.com' },
+    { code: "NTFCTN", name: "Notification", category: "Communication", description: "Alert title + brief message; for push notifications", example: 'New Message\nYou have 3 unread messages from John.\n\n[View] [Dismiss]' },
+    { code: "SMSFRM", name: "SMS Format", category: "Communication", description: "Short conversational text; for mobile messaging", example: 'Hey! Running 5 min late. Start without me.' },
+    { code: "TICKFM", name: "Ticket Format", category: "Communication", description: "ID/summary/description/status; for issue tracking", example: 'TICKET-1234\nStatus: Open | Priority: High\n\nSummary: Login page crashes on submit\n\nDescription: When clicking submit...\n\nAssigned: @developer' },
+    { code: "ABSTRK", name: "Abstract", category: "Academic & Writing", description: "Concise summary paragraph; for paper introductions", example: 'This study examines the effects of X on Y. Using data from 500 participants, we found that... The results suggest implications for...' },
+    { code: "CITAPA", name: "APA Citation", category: "Academic & Writing", description: "Author-date reference format; for academic papers", example: 'Smith, J. A. (2023). Title of the article. Journal Name, 15(2), 123-145. https://doi.org/...' },
+    { code: "CITMLA", name: "MLA Citation", category: "Academic & Writing", description: "Author-page reference format; for humanities papers", example: 'Smith, John. "Article Title." Journal Name, vol. 15, no. 2, 2023, pp. 123-145.' },
+    { code: "CITBIB", name: "BibTeX Entry", category: "Academic & Writing", description: "@type{key, fields}; for LaTeX bibliographies", example: '@article{smith2023,\n  author = {Smith, John},\n  title = {Article Title},\n  journal = {Journal Name},\n  year = {2023}\n}' },
+    { code: "OUTLNE", name: "Outline", category: "Academic & Writing", description: "Hierarchical numbered sections; for document planning", example: 'I. Introduction\n   A. Background\n   B. Thesis\nII. Main Points\n   A. Point 1\n   B. Point 2\nIII. Conclusion' },
+    { code: "FOOTNT", name: "Footnote", category: "Academic & Writing", description: "Superscript number + note text; for citations/asides", example: 'The study found significant results.¹\n\n---\n¹ Smith (2023) reported p < 0.05' },
+    { code: "BLCKQT", name: "Block Quote", category: "Academic & Writing", description: "Indented quoted passage; for extended citations", example: '    "The only way to do great work is to love\n    what you do. If you haven\'t found it yet,\n    keep looking."\n    \n    — Steve Jobs' },
+    { code: "THESST", name: "Thesis Statement", category: "Academic & Writing", description: "Single assertive sentence; for argument papers", example: 'While social media has benefits, its negative effects on mental health outweigh the positives, particularly among teenagers.' },
+    { code: "ANNBIB", name: "Annotated Bibliography", category: "Academic & Writing", description: "Citation + summary paragraph; for research papers", example: 'Smith, J. (2023). Title...\n\n   This article examines... The author argues that... This is relevant to my research because...' },
+    { code: "EXCSM", name: "Executive Summary", category: "Academic & Writing", description: "Key points and recommendations; for business reports", example: 'EXECUTIVE SUMMARY\n\nKey Findings:\n- Revenue increased 15%\n- Customer satisfaction at 92%\n\nRecommendations:\n1. Expand to new markets\n2. Invest in automation' },
+    { code: "LITRVW", name: "Literature Review", category: "Academic & Writing", description: "Source synthesis paragraphs; for research context", example: 'Several studies have examined this phenomenon. Smith (2020) found that... Building on this, Jones (2021) argued... However, recent work by Brown (2023) challenges...' },
+    { code: "ESSYFM", name: "Essay Format", category: "Academic & Writing", description: "Intro/body/conclusion structure; for academic writing", example: 'Introduction:\n[Hook, context, thesis]\n\nBody Paragraph 1:\n[Topic sentence, evidence, analysis]\n\nConclusion:\n[Restate thesis, implications]' },
+    { code: "STATBL", name: "Statistics Block", category: "Data & Analysis", description: "Mean/median/mode/std values; for data summaries", example: 'Sample Size: 500\nMean: 42.5\nMedian: 40.0\nStd Dev: 8.3\nRange: 25-68' },
+    { code: "SUMTBL", name: "Summary Table", category: "Data & Analysis", description: "Aggregated metrics in rows; for analysis results", example: 'Metric          Value    Change\n────────────────────────────────\nRevenue         $1.2M    +15%\nUsers           50,000   +25%\nConversion      3.2%     +0.5%' },
+    { code: "KEYVAL", name: "Key-Value Pairs", category: "Data & Analysis", description: "Label: Value on each line; for simple data display", example: 'Name: Project Alpha\nStatus: Active\nOwner: John Smith\nDue Date: 2024-03-01' },
+    { code: "METRCF", name: "Metrics Format", category: "Data & Analysis", description: "KPI name + value + trend; for dashboards", example: 'Monthly Active Users: 125,000 ▲ 12%\nAvg Session Duration: 4m 32s ▲ 8%\nBounce Rate: 35% ▼ 5%' },
+    { code: "FORMLA", name: "Formula Display", category: "Data & Analysis", description: "Mathematical expression; for calculations", example: 'Compound Interest:\nA = P(1 + r/n)^(nt)\n\nWhere:\nP = Principal\nr = Annual rate\nn = Compounds per year\nt = Years' },
+    { code: "ALGTHM", name: "Algorithm Block", category: "Data & Analysis", description: "Numbered steps with conditions; for process definition", example: '1. Initialize sum = 0\n2. For each element x in array:\n   a. If x > 0:\n      i. Add x to sum\n3. Return sum' },
+    { code: "MATRXF", name: "Matrix Format", category: "Data & Analysis", description: "Rows of space-separated numbers; for linear algebra", example: '┌         ┐\n│ 1  2  3 │\n│ 4  5  6 │\n│ 7  8  9 │\n└         ┘' },
+    { code: "VECFMT", name: "Vector Format", category: "Data & Analysis", description: "Bracketed comma-separated values; for array display", example: 'v = [1, 2, 3, 4, 5]\nw = [0.5, 0.3, 0.2]\n\nv · w = 2.4' },
+    { code: "HISTGR", name: "Histogram Text", category: "Data & Analysis", description: "Frequency distribution bars; for data distribution", example: '0-10:  ████ 4\n10-20: ████████ 8\n20-30: ██████████████ 14\n30-40: ██████ 6\n40-50: ██ 2' },
+    { code: "SCTTXT", name: "Scatter Text", category: "Data & Analysis", description: "(x,y) coordinate pairs; for point data", example: 'Data Points:\n(1, 2.5)\n(2, 4.1)\n(3, 5.8)\n(4, 8.2)\n(5, 9.5)' },
+    { code: "RCPEFM", name: "Recipe Format", category: "Specialized", description: "Ingredients + instructions; for cooking directions", example: 'Pasta Carbonara\n\nIngredients:\n- 400g spaghetti\n- 200g pancetta\n- 4 eggs\n\nInstructions:\n1. Cook pasta\n2. Fry pancetta\n3. Mix eggs...' },
+    { code: "PRDLST", name: "Product Listing", category: "Specialized", description: "Name/price/description; for e-commerce", example: 'Wireless Headphones\nPrice: $79.99\n★★★★☆ (4.2)\n\n- Noise cancelling\n- 30hr battery\n- Bluetooth 5.0\n\n[Add to Cart]' },
+    { code: "FAQFMT", name: "FAQ Format", category: "Specialized", description: "Q: / A: paired entries; for help documentation", example: 'Q: How do I reset my password?\nA: Click "Forgot Password" on the login page and follow the email instructions.\n\nQ: Can I cancel my subscription?\nA: Yes, go to Settings > Subscription > Cancel.' },
+    { code: "TUTFMT", name: "Tutorial Steps", category: "Specialized", description: "Numbered how-to instructions; for learning guides", example: 'How to Set Up SSH Keys\n\nStep 1: Generate a key pair\n$ ssh-keygen -t rsa\n\nStep 2: Copy to server\n$ ssh-copy-id user@host\n\nStep 3: Test connection' },
+    { code: "REVFMT", name: "Review Format", category: "Specialized", description: "Rating + pros/cons + summary; for evaluations", example: '★★★★☆ 4/5\n\nPros:\n+ Great battery life\n+ Excellent sound\n\nCons:\n- Expensive\n- Heavy\n\nVerdict: Worth it for audiophiles.' },
+    { code: "PRSCRD", name: "Scorecard", category: "Specialized", description: "Category + score grid; for assessments", example: 'Performance Review\n\nCommunication:  ████████░░ 8/10\nTechnical:      █████████░ 9/10\nTeamwork:       ███████░░░ 7/10\n\nOverall: 8.0/10' },
+    { code: "AGRFMT", name: "Agenda Format", category: "Specialized", description: "Time + topic list; for meeting planning", example: 'Team Meeting - Jan 15\n\n10:00 - Welcome & Updates\n10:15 - Q4 Review\n10:45 - Q1 Planning\n11:30 - Q&A\n12:00 - Adjourn' },
+    { code: "MINFMT", name: "Minutes Format", category: "Specialized", description: "Attendees/decisions/actions; for meeting records", example: 'Meeting Minutes - Jan 15\n\nAttendees: Alice, Bob, Carol\n\nDecisions:\n- Approved Q1 budget\n\nAction Items:\n- [ ] Bob: Send report by Friday\n- [ ] Alice: Schedule follow-up' },
+    { code: "PROJPL", name: "Project Plan", category: "Specialized", description: "Phases/tasks/owners/dates; for project management", example: 'Project: Website Redesign\n\nPhase 1: Design (Jan 1-15)\n  - Wireframes [Alice]\n  - Mockups [Bob]\n\nPhase 2: Development (Jan 16-31)\n  - Frontend [Carol]\n  - Backend [Dave]' },
+    { code: "USRSTY", name: "User Story", category: "Specialized", description: "As a/I want/So that; for agile development", example: 'As a registered user\nI want to reset my password via email\nSo that I can regain access to my account\n\nAcceptance Criteria:\n- Email sent within 1 minute\n- Link expires after 24 hours' },
+    { code: "REQFMT", name: "Requirements", category: "Specialized", description: "ID + description + priority; for specifications", example: 'REQ-001 | Priority: High\nUsers must be able to login with email/password\n\nREQ-002 | Priority: Medium\nSystem shall support OAuth login\n\nREQ-003 | Priority: Low\nUsers can customize theme colors' },
+    { code: "TCASFT", name: "Test Case", category: "Specialized", description: "Given/When/Then structure; for BDD testing", example: 'Test: User Login\n\nGiven: User is on login page\nWhen: User enters valid credentials\nThen: User is redirected to dashboard\nAnd: Welcome message is displayed' },
+    { code: "CHGLOG", name: "Changelog", category: "Specialized", description: "Version + date + changes; for release notes", example: '## [1.2.0] - 2024-01-15\n\n### Added\n- Dark mode support\n- Export to PDF\n\n### Fixed\n- Login timeout issue\n\n### Changed\n- Updated dependencies' },
+    { code: "READMF", name: "README", category: "Specialized", description: "Project overview template; for repository docs", example: '# Project Name\n\nBrief description.\n\n## Installation\n```\nnpm install\n```\n\n## Usage\n```\nnpm start\n```\n\n## License\nMIT' },
+    { code: "LCNSFM", name: "License Block", category: "Specialized", description: "Copyright + terms; for legal notices", example: 'MIT License\n\nCopyright (c) 2024 Author Name\n\nPermission is hereby granted, free of charge, to any person obtaining a copy...' },
+    { code: "CREDTS", name: "Credits", category: "Specialized", description: "Role: Name list; for acknowledgments", example: 'Credits\n\nDeveloper: John Smith\nDesigner: Jane Doe\nTester: Bob Wilson\n\nSpecial Thanks:\n- Open source community\n- Beta testers' },
+    { code: "GLOSSY", name: "Glossary", category: "Specialized", description: "Term: Definition entries; for terminology", example: 'API\n  Application Programming Interface\n\nREST\n  Representational State Transfer\n\nJSON\n  JavaScript Object Notation' },
+    { code: "FRSTCK", name: "Feature Spec", category: "Specialized", description: "Problem/solution/acceptance; for product specs", example: 'Feature: Dark Mode\n\nProblem: Users strain eyes at night\n\nSolution: Add dark color theme option\n\nAcceptance:\n- Toggle in settings\n- Persists across sessions\n- All pages supported' },
+    { code: "SWOTFM", name: "SWOT Analysis", category: "Specialized", description: "Strengths/Weaknesses/Opportunities/Threats grid; for strategic planning", example: 'STRENGTHS         | WEAKNESSES\n- Strong brand    | - High costs\n- Loyal customers | - Limited reach\n------------------|------------------\nOPPORTUNITIES     | THREATS\n- New markets     | - Competitors\n- Partnerships    | - Regulations' },
+    { code: "PROSCO", name: "Pros/Cons", category: "Specialized", description: "Two-column advantages/disadvantages; for decision support", example: 'PROS              | CONS\n------------------|------------------\n+ Lower cost      | - Learning curve\n+ More features   | - Less support\n+ Open source     | - Complex setup' },
+    { code: "QAFRMT", name: "Q&A Thread", category: "Specialized", description: "Nested question-answer pairs; for forum-style content", example: 'Q: How do I install Node.js?\n│\n├─ A: Download from nodejs.org (5 upvotes)\n│  └─ Comment: Works on Mac too\n│\n└─ A: Use nvm for version management (12 upvotes)' },
+    { code: "CMDREF", name: "Command Reference", category: "Specialized", description: "Command + options + examples; for CLI documentation", example: 'git commit\n\nCommit staged changes to repository\n\nOptions:\n  -m <msg>   Commit message\n  -a         Stage all modified files\n  --amend    Modify last commit\n\nExample:\n  git commit -m "Add feature"' },
+    { code: "APIDOC", name: "API Documentation", category: "Specialized", description: "Endpoint/params/response/example; for developer guides", example: 'GET /api/users/:id\n\nParameters:\n  id (required) - User ID\n\nResponse:\n  200: { id, name, email }\n  404: { error: "Not found" }\n\nExample:\n  GET /api/users/123' },
+    { code: "ERRMSG", name: "Error Message", category: "Specialized", description: "Code + message + resolution; for troubleshooting", example: 'Error: ECONNREFUSED\n\nMessage: Connection refused to localhost:5432\n\nCause: Database server not running\n\nResolution:\n1. Check if PostgreSQL is running\n2. Verify port 5432 is open' },
+    { code: "GUIDLN", name: "Guideline List", category: "Specialized", description: "Do/Don't paired rules; for best practices", example: 'Password Guidelines\n\nDO:\n✓ Use 12+ characters\n✓ Mix letters, numbers, symbols\n✓ Use unique passwords\n\nDON\'T:\n✗ Use personal info\n✗ Reuse passwords\n✗ Share with others' },
+    { code: "RFPTPL", name: "RFP Template", category: "Specialized", description: "Sections for proposals; for procurement", example: 'REQUEST FOR PROPOSAL\n\n1. Project Overview\n   [Description of needs]\n\n2. Scope of Work\n   [Detailed requirements]\n\n3. Timeline\n   [Key milestones]\n\n4. Budget\n   [Constraints]\n\n5. Submission Details\n   [How to respond]' }
+];
+
+const categories = [...new Set(formats.map(f => f.category))];
+let activeCategory = null;
+let selectedCode = null;
+
+function init() {
+    renderFilters();
+    renderList(formats);
+    updateStats(formats.length);
+    document.getElementById('search').addEventListener('input', handleSearch);
+    // Select first item
+    if (formats.length > 0) selectFormat(formats[0].code);
+}
+
+function renderFilters() {
+    const container = document.getElementById('filters');
+    container.innerHTML = `<button class="filter-btn active" data-category="">All</button>` +
+        categories.map(c => `<button class="filter-btn" data-category="${c}">${c}</button>`).join('');
+    container.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            container.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            activeCategory = btn.dataset.category || null;
+            handleSearch();
+        });
+    });
+}
+
+function renderList(list) {
+    const container = document.getElementById('list');
+    container.innerHTML = list.map(f => `
+        <div class="card ${f.code === selectedCode ? 'active' : ''}" data-code="${f.code}">
+            <div class="card-row">
+                <span class="code">${f.code}</span>
+                <span class="name">${f.name}</span>
+            </div>
+        </div>
+    `).join('');
+    container.querySelectorAll('.card').forEach(card => {
+        card.addEventListener('click', () => selectFormat(card.dataset.code));
+    });
+}
+
+function handleSearch() {
+    const query = document.getElementById('search').value.toLowerCase();
+    let filtered = formats;
+    if (activeCategory) filtered = filtered.filter(f => f.category === activeCategory);
+    if (query) filtered = filtered.filter(f =>
+        f.code.toLowerCase().includes(query) ||
+        f.name.toLowerCase().includes(query) ||
+        f.description.toLowerCase().includes(query)
+    );
+    renderList(filtered);
+    updateStats(filtered.length);
+    if (filtered.length > 0 && !filtered.find(f => f.code === selectedCode)) {
+        selectFormat(filtered[0].code);
+    }
+}
+
+function updateStats(count) {
+    document.getElementById('stats').textContent = `${count} of ${formats.length} formats`;
+}
+
+function selectFormat(code) {
+    selectedCode = code;
+    const f = formats.find(x => x.code === code);
+    if (!f) return;
+    document.querySelectorAll('.card').forEach(c => c.classList.toggle('active', c.dataset.code === code));
+    document.getElementById('detail').innerHTML = `
+        <div class="detail-header">
+            <div class="detail-title">
+                <span class="code">${f.code}</span>
+                <span class="name">${f.name}</span>
+            </div>
+            <span class="detail-category">${f.category}</span>
+        </div>
+        <div class="detail-content">
+            <div class="section">
+                <h3>Description</h3>
+                <p>${f.description}</p>
+            </div>
+            <div class="section">
+                <h3>How to Use</h3>
+                <div class="prompt-box">
+                    <code>"Format this as ${f.code}"</code>
+                    <button class="copy-btn" onclick="copyPrompt('${f.code}', this)">Copy</button>
+                </div>
+            </div>
+            <div class="section">
+                <h3>Example Output</h3>
+                <div class="example-box">${escapeHtml(f.example)}</div>
+            </div>
+        </div>
+    `;
+}
+
+function escapeHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function copyPrompt(code, btn) {
+    navigator.clipboard.writeText(`Format this as ${code}`).then(() => {
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1500);
+    });
+}
+
+init();
+    </script>
+</body>
+</html>
