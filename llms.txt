@@ -1,0 +1,34 @@
+# AI Output Format Catalog
+
+> 116 standardized tags for formatting AI outputs consistently
+
+A reference library of format codes that users can include in prompts to specify output structure. Tags are 4-8 uppercase letters (e.g., JSNARR, MDTABL, CODEBL).
+
+## Docs
+
+- [README](./README.md): Quick start, category cheatsheet, usage examples
+- [Full Reference](./ai-output-formatting-tags.md): Complete documentation of all 116 tags
+- [Interactive Playground](https://kapodeistria.github.io/ai-output-format-catalog/playground.html): Search and browse with live examples
+
+## Categories
+
+- Structured Data (13): JSNARR, JSNOBJ, YAMLCF, CSVDAT, etc.
+- Markup & Documentation (13): MDTXT, HTMLPG, LATEXF, etc.
+- Lists & Enumerations (12): BULLST, NUMBLST, CHKLST, etc.
+- Tables & Grids (10): MDTABL, CMPTBL, KANTBL, etc.
+- Code & Technical (18): CODEBL, APIREQ, SQLQRY, etc.
+- Diagrams & Visualizations (16): FLWCHT, MERMAD, TREEDI, etc.
+- Communication (10): EMLFMT, SLKMSG, TICKFM, etc.
+- Academic & Writing (12): CITAPA, ABSTRK, ESSYFM, etc.
+- Data & Analysis (10): STATBL, METRCF, FORMLA, etc.
+- Specialized (12): USRSTY, FAQFMT, CHGLOG, etc.
+- Documentation (14): READMF, APIDOC, CMDREF, etc.
+
+## Usage
+
+Include any tag in a prompt:
+```
+"Format the output as JSNARR"
+"Give me a CMPTBL of the options"
+"Show this as FLWCHT"
+```
